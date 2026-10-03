@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Flag preview</title>
+<style>
+  body { background: #262b44; color: #fff; font: 11px monospace; margin: 8px; }
+  #grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .c { width: 112px; text-align: center; background: #3a4466; padding: 4px 2px; }
+  canvas { image-rendering: pixelated; display: block; margin: 2px auto; }
+</style>
+</head>
+<body>
+<div id="info"></div>
+<div id="grid"></div>
+<script src="../js/core/util.js"></script>
+<script src="../js/core/gfx.js"></script>
+<script src="../js/data/countries.js"></script>
+<script>
+  // ?from=0&n=60  → paginate ; ?scale=3 → zoom of the 24x16 render
+  const q = new URLSearchParams(location.search);
+  const from = +(q.get('from') || 0), n = +(q.get('n') || 400), scale = +(q.get('scale') || 3);
+  const only = q.get('only'); // comma-separated codes
+  let list = OG.COUNTRIES;
+  if (only) { const s = only.split(','); list = list.filter(c => s.includes(c.code)); }
+  document.getElementById('info').textContent = 'countries: ' + OG.COUNTRIES.length;
+  const grid = document.getElementById('grid');
+  list.slice(from, from + n).forEach(c => {
+    const d = document.createElement('div'); d.className = 'c';
+    const cv = document.createElement('canvas'); cv.width = 24 * scale; cv.height = 16 * scale;
+    const ctx = cv.getContext('2d'); ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(OG.flagCanvas(c.code, 24, 16), 0, 0, 24 * scale, 16 * scale);
+    const cv2 = document.createElement('canvas'); cv2.width = 48; cv2.height = 32;
+    cv2.getContext('2d').drawImage(OG.flagCanvas(c.code, 48, 32), 0, 0);
+    d.appendChild(cv); d.appendChild(cv2);
+    const t = document.createElement('div');
+    t.innerHTML = c.code + ' ' + c.ko + '<br>' + c.en + ' [' + c.region + ' ' + c.power + ']' +
+      '<br><span style="background:' + c.kit[0] + '">&nbsp;&nbsp;&nbsp;</span><span style="background:' + c.kit[1] + '">&nbsp;&nbsp;&nbsp;</span>';
+    d.appendChild(t); grid.appendChild(d);
+  });
+</script>
+</body>
+</html>

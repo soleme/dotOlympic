@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도트 올림픽 2026</title>
+<meta name="description" content="하계·동계 올림픽과 2026 아이치-나고야 아시안게임 종목을 담은 도트 멀티플레이 스포츠 게임">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/loader.js"></script>
+</head>
+<body>
+<canvas id="game" width="480" height="270"></canvas>
+<div id="overlay"></div>
+<script>
+  (function () {
+    const fonts = ['8px Galmuri7', '10px Galmuri9', '12px Galmuri11', 'bold 12px Galmuri11', '15px Galmuri14', 'bold 24px Galmuri11', '30px Galmuri14'];
+    const go = () => OG.App.start(document.getElementById('game'));
+    Promise.race([
+      Promise.all(fonts.map(f => document.fonts.load(f))),
+      new Promise(r => setTimeout(r, 2500))
+    ]).catch(() => {}).then(go);
+  })();
+</script>
+</body>
+</html>

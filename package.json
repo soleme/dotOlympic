@@ -1,0 +1,16 @@
+{
+  "name": "dot-olympic-2026",
+  "version": "1.0.0",
+  "description": "도트 올림픽 2026 — 하계/동계/아시안게임 픽셀 멀티플레이 스포츠 게임",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node tools/smoke.js"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.22.0"
+  },
+  "private": true
+}

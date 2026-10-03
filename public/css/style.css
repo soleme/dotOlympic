@@ -1,0 +1,43 @@
+@font-face { font-family: 'Galmuri7'; src: url('../fonts/Galmuri7.woff2') format('woff2'); }
+@font-face { font-family: 'Galmuri9'; src: url('../fonts/Galmuri9.woff2') format('woff2'); }
+@font-face { font-family: 'Galmuri11'; src: url('../fonts/Galmuri11.woff2') format('woff2'); }
+@font-face { font-family: 'Galmuri11'; font-weight: bold; src: url('../fonts/Galmuri11-Bold.woff2') format('woff2'); }
+@font-face { font-family: 'Galmuri14'; src: url('../fonts/Galmuri14.woff2') format('woff2'); }
+
+:root { --bg: #0d0b16; --fg: #ffffff; --accent: #feae34; --panel: #181425; --line: #3a4466; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden; }
+body { display: flex; align-items: center; justify-content: center; font-family: 'Galmuri11', monospace; }
+#game {
+  image-rendering: pixelated; image-rendering: crisp-edges;
+  background: #000; display: block;
+  max-width: 100vw; max-height: 100vh;
+}
+#overlay {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  background: rgba(13, 11, 22, 0.82); z-index: 10;
+}
+#overlay.show { display: flex; }
+.box {
+  background: var(--panel); border: 3px solid #c0cbdc; padding: 18px 20px; width: min(420px, calc(100vw - 32px));
+  box-shadow: 6px 6px 0 #000; font-size: 14px; line-height: 1.6;
+}
+.box h2 { margin: 0 0 10px; font-family: 'Galmuri14', monospace; font-weight: normal; color: var(--accent); font-size: 18px; }
+.box label { display: block; margin: 10px 0 4px; color: #c0cbdc; font-size: 12px; }
+.box input {
+  width: 100%; font: inherit; font-size: 16px; padding: 8px; background: #0d0b16; color: #fff;
+  border: 2px solid var(--line); outline: none; text-transform: uppercase;
+}
+.box input:focus { border-color: var(--accent); }
+.box .row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.box button {
+  flex: 1; font: inherit; font-size: 14px; padding: 9px 10px; cursor: pointer; border: none;
+  background: #e43b44; color: #fff; box-shadow: 0 3px 0 #a22633;
+}
+.box button.alt { background: #3a4466; box-shadow: 0 3px 0 #262b44; }
+.box button:active { transform: translateY(2px); box-shadow: none; }
+.box .msg { margin-top: 10px; min-height: 1.4em; color: #fee761; font-size: 12px; }
+.box .hint { color: #8b9bb4; font-size: 11px; margin-top: 8px; }
+#hud-net {
+  position: fixed; left: 8px; top: 6px; font-size: 11px; color: #8b9bb4; z-index: 5; pointer-events: none;
+}

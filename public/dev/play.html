@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Event Test Bench</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  body { flex-direction: column; overflow: auto; }
+  #game { width: 960px; height: 540px; }
+  #info { font: 12px monospace; color: #c0cbdc; padding: 6px; white-space: pre-wrap; max-width: 960px; }
+  #list { font: 13px monospace; padding: 10px; columns: 3; }
+  #list a { color: #feae34; display: block; }
+</style>
+<script src="../js/loader.js" data-nogame></script>
+</head>
+<body>
+<canvas id="game" width="480" height="270"></canvas>
+<div id="info"></div>
+<div id="list"></div>
+<script>
+/* Test bench for a single event.
+ *  ?ev=<eventId>  &p=<humans 1-4>  &diff=0|1|2  &auto=1 (bots play)  &seed=N
+ *  &fast=<seconds>  simulate N seconds instantly before drawing (for headless screenshots)
+ *  &speed=<k>       run k simulation steps per frame
+ *  &botDelay=<sec>  bots stay idle for the first N seconds (avoid false starts)
+ * Keys: P1 WASD+Space, P2 arrows+Enter, P3 IJKL+O, P4 TFGH+Y.  R = restart.
+ */
+(function () {
+  const q = new URLSearchParams(location.search);
+  const info = document.getElementById('info');
+  const evId = q.get('ev');
+  if (!evId) {
+    const list = document.getElementById('list');
+    list.innerHTML = '<b>' + OG.EVENTS.length + ' events</b><br>' + OG.EVENTS.map(e =>
+      '<a href="?ev=' + e.id + '">' + e.icon + ' ' + e.name + ' <small>(' + e.engine + ':' + e.id + ')</small></a>').join('');
+    return;
+  }
+  const ev = OG.EVENT_MAP[evId];
+  if (!ev) { info.textContent = 'unknown event ' + evId; return; }
+  const engine = OG.engines[ev.engine];
+  const humans = Math.max(0, Math.min(8, +(q.get('p') || 1)));
+  const diff = q.get('diff') == null ? 1 : +q.get('diff');
+  const auto = q.get('auto') === '1';
+  const fast = +(q.get('fast') || 0);
+  const speed = +(q.get('speed') || 1);
+  let seed = +(q.get('seed') || 12345);
+  const cv = document.getElementById('game');
+  const ctx = cv.getContext('2d');
+  const g = new OG.Gfx(ctx);
+  OG.Input.attach(window);
+  let state, ents, bots, errs = [];
+
+  function start() {
+    const holder = { seed };
+    const R0 = OG.rng(holder);
+    const pref = ['KOR', 'JPN', 'USA', 'CHN', 'FRA', 'BRA', 'KEN', 'GER'];
+    const players = [];
+    for (let i = 0; i < humans; i++) players.push({ pid: i, country: OG.COUNTRY_MAP[pref[i]] ? pref[i] : OG.COUNTRIES[i].code });
+    if (engine.type === 'duel') ents = OG.makeEntrants(players.slice(0, 2), 2, diff, R0);
+    else ents = OG.makeEntrants(players, engine.fieldSize || 8, diff, R0);
+    state = engine.init(ev, ents, { difficulty: diff }, R0);
+    state.seed = holder.seed;
+    bots = players.map((p, i) => new OG.Bot(seed + i * 7, +(q.get('botDelay') || 0) * 60));
+    errs = [];
+    simTime = 0; doneAt = null;
+    if (fast > 0) { for (let i = 0; i < fast * 60 && !state.done; i++) step(); }
+  }
+  let simTime = 0, doneAt = null;
+  function step() {
+    if (state.done) return;
+    let inputs = OG.Input.poll();
+    if (auto) inputs = bots.map(b => b.input());
+    const R = OG.rng(state);
+    try { engine.update(state, inputs, OG.DT, R); }
+    catch (e) { errs.push('update: ' + e.stack); state.done = true; }
+    simTime += OG.DT;
+    if (state.sfx && state.sfx.length) { state.sfx.forEach(s => OG.Audio.play(s)); state.sfx = []; }
+    if (state.done && doneAt == null) {
+      doneAt = simTime;
+      errs = errs.concat(OG.validateResults(engine, state, ents));
+    }
+  }
+  function frame(ts) {
+    g.t = ts / 1000;
+    if (!state.done) for (let i = 0; i < speed; i++) step();
+    try { engine.draw(g, state); } catch (e) { errs.push('draw: ' + e.stack); }
+    const v = OG.validateState(state);
+    const size = JSON.stringify(state).length;
+    let txt = ev.name + ' [' + ev.engine + '] t=' + simTime.toFixed(1) + 's  state=' + (size / 1024).toFixed(1) + 'KB' + (v.length ? '\nSTATE PROBLEMS: ' + v.join('; ') : '');
+    if (errs.length) txt += '\nERRORS:\n' + errs.join('\n');
+    if (state.done) {
+      txt += '\nDONE at ' + (doneAt || 0).toFixed(1) + 's — results:\n' + (state.results || []).map((r, i) => {
+        const e = ents[r.idx] || {};
+        return (i + 1) + '. ' + (e.human ? e.tag + ' ' : '') + e.country + ' ' + e.name + '  ' + r.text + (r.dnf ? ' (DNF)' : '') + '  score=' + r.score;
+      }).join('\n') + '\n[R] restart';
+    }
+    info.textContent = txt;
+    requestAnimationFrame(frame);
+  }
+  window.addEventListener('keydown', e => { if (e.code === 'KeyR' && state && state.done) { seed++; start(); } });
+  window.addEventListener('pointerdown', () => { OG.Audio.init(); OG.Audio.resume(); }, { once: true });
+  window.addEventListener('keydown', () => { OG.Audio.init(); OG.Audio.resume(); }, { once: true });
+  Promise.all(['8px Galmuri7', '10px Galmuri9', '12px Galmuri11', 'bold 12px Galmuri11', '15px Galmuri14'].map(f => document.fonts.load(f))).catch(() => {}).then(() => {
+    start();
+    if (fast > 0) { // single deterministic frame for screenshots
+      g.t = fast;
+      try { engine.draw(g, state); } catch (e) { errs.push('draw: ' + e.stack); }
+      info.textContent = 'fast=' + fast + ' done=' + !!state.done + (errs.length ? '\nERRORS:\n' + errs.join('\n') : '') + '\nproblems: ' + OG.validateState(state).join('; ');
+      if (q.get('live') === '1') requestAnimationFrame(frame);
+      return;
+    }
+    requestAnimationFrame(frame);
+  });
+})();
+</script>
+</body>
+</html>
